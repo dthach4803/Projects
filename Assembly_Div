@@ -1,0 +1,169 @@
+; This code is written in Assembly and ran on Linux
+; Shows usage of macros (along with the macros themselves)
+; THE CODE SOLVES THE FOLLOWING: Code the expression X = (A+1) * B/C where A,B,C are signed variables.
+;David Thach Division
+%include "pcmac.inc"
+
+	section .data
+	crlf	db  13,10
+	bspace	db  ' '
+	A db 'Input a number for A',13,10
+	alen equ $-A
+	B db 'Input a number for B',13,10
+	blen equ $-B
+	C db 'Input a number for C',13,10
+	clen equ $-C
+	
+	section .bss
+	a resb 2
+	b resb 2
+	c resb 2
+	x resb 2
+	result resb 2
+	binnum resb 2
+	holder1 resb 2
+	holder2 resb 2
+
+	section .text
+	global _start
+	_start:
+	
+	write A,alen
+	read a,2
+	write B,blen
+	read b,2
+	write C,clen
+	read c,2
+	mov ax,[a]
+	and ax,000fh
+	
+	mov bx, 1
+	add ax,bx
+	putBin 1
+	write crlf,2
+	
+	mov [x],ax
+	mov ax, [b]
+	and ax,000fh
+	
+	mov bx,[x]
+	imul bx
+	putBin 2
+	write crlf, 2
+	
+	; move the output into a holder so 
+	; A = 4 B = 2 it should hold 10
+	mov [holder1], dx
+	cwd
+	; test to see if its held properly
+	putBin 3
+	write crlf,2
+	mov bx,[c]
+	and bx,000fh
+	idiv bx
+	putBin 4
+	write crlf,2
+	
+	
+	
+	
+
+	
+	
+	;mov al,7
+	;cbw
+	;mov bl,5
+	;div bl
+	;putBin 1
+	;write crlf,2
+	
+	
+	;mov ax,700
+	;cwd
+	;mov bx,300
+	;div bx
+	;pusha
+	;mov ax,dx
+	;putBin 2
+	;popa
+	;write bspace,1
+	;putBin 3
+	;write crlf,2
+	
+	;mov al,-7
+	;cbw
+	;mov bl,5
+	;idiv bl
+	;putBin 4
+	;write crlf,2
+	
+	end
+	
+/
+Run macro
+nasm -f elf $1.asm
+ld -m elf_i386 -s -o $1 $1.o
+./$1
+Pcmac.inc macro
+;add popa to overwrite the register with input
+ ;preserves what was in the register before then put it back in for pop
+ ;int is interrupt
+ ;al lower half 8 bits
+ ;ah higher half 8 bits
+ ;ax 16 bits
+ ;eax extended ax 32 bits
+ 
+  %macro write 2
+  pusha
+  mov	edx,%2
+  mov	ecx,%1
+  mov	ebx,1
+  mov	eax,4
+  int	80h
+  popa
+  %endmacro
+
+  %macro read 2
+  pusha
+  mov	edx,%2
+  mov	ecx,%1
+  mov	ebx,1
+  mov	eax,3
+  int	80h
+  popa
+  %endmacro
+
+ 
+  %macro end 0
+  mov	eax,1
+  int	80h
+  %endmacro
+  
+  %macro putBin 1
+  mov ecx,16
+  shift%1:
+  rol ax,1
+  mov [result],ax
+  and ax,01h
+  add ax,'0'
+  push ecx
+  mov [binnum],ax
+  pusha
+  mov al,cl
+  mov bl,4
+  div bl
+  cmp ah,0h
+  jz space%1
+  resume%1:
+  popa
+  write binnum,2
+  pop ecx
+  mov ax,[result]
+  loop shift%1
+  jmp fin%1
+  space%1:
+  write bspace,1
+  jmp resume%1
+  fin%1:
+  %endmacro
+
